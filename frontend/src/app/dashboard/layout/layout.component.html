@@ -1,0 +1,62 @@
+<div class="dashboard-layout" [class.sidebar-closed]="!isSidebarOpen">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>Demo Pro</h1>
+      <button class="close-btn" (click)="toggleSidebar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="nav-text">Dashboard</span>
+      </a>
+
+      <a routerLink="/dashboard/citas" routerLinkActive="active" class="nav-item">
+        <span class="material-symbols-outlined">calendar_month</span>
+        <span class="nav-text">Citas</span>
+      </a>
+
+      <a routerLink="/dashboard/citas/nueva" routerLinkActive="active" class="nav-item">
+        <span class="material-symbols-outlined">add_circle</span>
+        <span class="nav-text">Nueva Cita</span>
+      </a>
+
+      <div class="nav-divider"></div>
+
+      <a routerLink="/" class="nav-item">
+        <span class="material-symbols-outlined">home</span>
+        <span class="nav-text">Ver Landing</span>
+      </a>
+
+      <button (click)="logout()" class="nav-item logout-btn">
+        <span class="material-symbols-outlined">logout</span>
+        <span class="nav-text">Cerrar Sesión</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="menu-btn" (click)="toggleSidebar()">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+
+      <div class="topbar-right">
+        <div class="user-info">
+          <span class="material-symbols-outlined">account_circle</span>
+          <span>{{ userName }}</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="page-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

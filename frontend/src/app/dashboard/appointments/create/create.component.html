@@ -1,0 +1,110 @@
+<div class="create-appointment-page">
+  <div class="page-header">
+    <div>
+      <a routerLink="/dashboard/citas" class="back-link">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Volver a citas
+      </a>
+      <h1>Nueva Cita</h1>
+      <p>Registra una nueva cita para un paciente</p>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <form [formGroup]="appointmentForm" (ngSubmit)="onSubmit()">
+      <!-- Patient Info -->
+      <div class="form-section">
+        <h2>
+          <span class="material-symbols-outlined">person</span>
+          Información del Paciente
+        </h2>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="patient_name">Nombre Completo *</label>
+            <input type="text" id="patient_name" formControlName="patient_name" placeholder="Juan Pérez García" [class.error]="patient_name?.invalid && patient_name?.touched" />
+            @if (patient_name?.invalid && patient_name?.touched) {
+            <span class="error-message">@if (patient_name?.errors?.['required']) { El nombre es requerido } @else if (patient_name?.errors?.['minlength']) { Mínimo 3 caracteres }</span>
+            }
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="patient_email">Correo Electrónico *</label>
+            <input type="email" id="patient_email" formControlName="patient_email" placeholder="juan@example.com" [class.error]="patient_email?.invalid && patient_email?.touched" />
+            @if (patient_email?.invalid && patient_email?.touched) {
+            <span class="error-message">@if (patient_email?.errors?.['required']) { El correo es requerido } @else if (patient_email?.errors?.['email']) { Ingresa un correo válido }</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="patient_phone">Teléfono *</label>
+            <input type="tel" id="patient_phone" formControlName="patient_phone" placeholder="4441234567" maxlength="10" [class.error]="patient_phone?.invalid && patient_phone?.touched" />
+            @if (patient_phone?.invalid && patient_phone?.touched) {
+            <span class="error-message">@if (patient_phone?.errors?.['required']) { El teléfono es requerido } @else if (patient_phone?.errors?.['pattern']) { Debe ser un número de 10 dígitos }</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Appointment Details -->
+      <div class="form-section">
+        <h2>
+          <span class="material-symbols-outlined">calendar_month</span>
+          Detalles de la Cita
+        </h2>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="treatment_type">Tipo de Tratamiento *</label>
+            <select id="treatment_type" formControlName="treatment_type" [class.error]="treatment_type?.invalid && treatment_type?.touched">
+              <option value="">Selecciona un tratamiento</option>
+              @for (treatment of treatments; track treatment.value) {
+              <option [value]="treatment.value">{{ treatment.label }}</option>
+              }
+            </select>
+            @if (treatment_type?.invalid && treatment_type?.touched) {
+            <span class="error-message">Selecciona un tipo de tratamiento</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="appointment_date">Fecha y Hora *</label>
+            <input type="datetime-local" id="appointment_date" formControlName="appointment_date" [class.error]="appointment_date?.invalid && appointment_date?.touched" />
+            @if (appointment_date?.invalid && appointment_date?.touched) {
+            <span class="error-message">La fecha y hora son requeridas</span>
+            }
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="notes">Notas (opcional)</label>
+            <textarea id="notes" formControlName="notes" rows="4" placeholder="Información adicional sobre la cita o el paciente..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      @if (errorMessage) {
+      <div class="alert alert-error">
+        <span class="material-symbols-outlined">error</span>
+        {{ errorMessage }}
+      </div>
+      }
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <a routerLink="/dashboard/citas" class="btn-secondary">Cancelar</a>
+        <button type="submit" class="btn-primary" [disabled]="isLoading || appointmentForm.invalid">
+          @if (isLoading) {
+          <span class="spinner"></span>
+          Guardando... } @else {
+          <span class="material-symbols-outlined">save</span>
+          Guardar Cita }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

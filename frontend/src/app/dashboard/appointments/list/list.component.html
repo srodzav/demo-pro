@@ -1,0 +1,128 @@
+<div class="appointments-list-page">
+  <div class="page-header">
+    <div>
+      <h1>Gestión de Citas</h1>
+      <p>Administra todas las citas de tus pacientes</p>
+    </div>
+    <a routerLink="/dashboard/citas/nueva" class="btn-primary">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Cita
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-card">
+    <div class="filter-group">
+      <label>
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()" placeholder="Buscar por nombre, email o teléfono..." />
+      </label>
+    </div>
+
+    <div class="filter-group">
+      <label>
+        <span class="material-symbols-outlined">filter_alt</span>
+        <select [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+          <option value="all">Todos los estados</option>
+          <option value="pending">Pendientes</option>
+          <option value="confirmed">Confirmadas</option>
+          <option value="cancelled">Canceladas</option>
+          <option value="completed">Completadas</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="results-count">{{ filteredAppointments.length }} resultado(s)</div>
+  </div>
+
+  @if (isLoading) {
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Cargando citas...</p>
+  </div>
+  } @else if (filteredAppointments.length === 0) {
+  <div class="empty-state">
+    <span class="material-symbols-outlined">event_busy</span>
+    @if (searchTerm || statusFilter !== 'all') {
+    <p>No se encontraron citas con los filtros aplicados</p>
+    <button (click)="searchTerm = ''; statusFilter = 'all'; onFilterChange()" class="btn-secondary">Limpiar filtros</button>
+    } @else {
+    <p>No hay citas registradas</p>
+    <a routerLink="/dashboard/citas/nueva" class="btn-primary">Crear primera cita</a>
+    }
+  </div>
+  } @else {
+  <div class="appointments-table-container">
+    <table class="appointments-table">
+      <thead>
+        <tr>
+          <th>Paciente</th>
+          <th>Contacto</th>
+          <th>Tratamiento</th>
+          <th>Fecha y Hora</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (appointment of filteredAppointments; track appointment.id) {
+        <tr>
+          <td>
+            <div class="patient-info">
+              <span class="material-symbols-outlined">person</span>
+              <strong>{{ appointment.patient_name }}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="contact-info">
+              <div>
+                <span class="material-symbols-outlined">mail</span>
+                {{ appointment.patient_email }}
+              </div>
+              <div>
+                <span class="material-symbols-outlined">phone</span>
+                {{ appointment.patient_phone }}
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="treatment-badge">
+              {{ getTreatmentText(appointment.treatment_type) }}
+            </span>
+          </td>
+          <td>
+            <div class="date-info">
+              <span class="material-symbols-outlined">calendar_today</span>
+              {{ appointment.appointment_date | date : 'dd/MM/yyyy' }}
+              <br />
+              <small>{{ appointment.appointment_date | date : 'HH:mm' }}</small>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(appointment.status!)">
+              {{ getStatusText(appointment.status!) }}
+            </span>
+          </td>
+          <td>
+            <div class="actions">
+              @if (appointment.status === 'pending') {
+              <button (click)="confirmAppointment(appointment.id!)" class="action-btn confirm-btn" title="Confirmar">
+                <span class="material-symbols-outlined">check_circle</span>
+              </button>
+              } @if (appointment.status !== 'cancelled') {
+              <button (click)="cancelAppointment(appointment.id!)" class="action-btn cancel-btn" title="Cancelar">
+                <span class="material-symbols-outlined">cancel</span>
+              </button>
+              }
+              <button (click)="deleteAppointment(appointment.id!)" class="action-btn delete-btn" title="Eliminar">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</div>
