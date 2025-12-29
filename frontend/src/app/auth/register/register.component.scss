@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  background: var(--backgound);
   padding: 2rem;
 }
 
@@ -17,7 +17,7 @@
 }
 
 .register-header {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   color: white;
   padding: 2.5rem 2rem;
   text-align: center;
@@ -104,7 +104,7 @@
 .btn-primary {
   width: 100%;
   padding: 0.875rem 1.5rem;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   color: white;
   border: none;
   border-radius: 8px;
