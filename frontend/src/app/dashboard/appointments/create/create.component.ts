@@ -100,9 +100,11 @@ export class CreateComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
+    const formData = this.appointmentForm.value;
     const appointmentData = {
-      ...this.appointmentForm.value,
+      ...formData,
       patient_id: this.selectedPatientId,
+      appointment_date: formData.appointment_date ? new Date(formData.appointment_date).toISOString() : null,
     };
 
     this.appointmentService.create(appointmentData).subscribe({
