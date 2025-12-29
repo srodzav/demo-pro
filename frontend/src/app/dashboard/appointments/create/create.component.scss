@@ -28,7 +28,7 @@
     transition: color 0.3s ease;
 
     &:hover {
-      color: var(--primary-dark);
+      color: var(--accent);
     }
 
     .material-symbols-outlined {
@@ -365,7 +365,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: var(--primary);
   color: white;
 
   &:hover:not(:disabled) {

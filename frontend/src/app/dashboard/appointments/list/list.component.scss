@@ -35,7 +35,7 @@
     transition: all 0.3s ease;
 
     &:hover {
-      background: var(--primary-dark);
+      background: var(--accent);
       transform: translateY(-2px);
     }
 
@@ -167,7 +167,7 @@
   .btn-primary {
     background: var(--primary);
     &:hover {
-      background: var(--primary-dark);
+      background: var(--accent);
     }
   }
 
