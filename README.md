@@ -58,7 +58,7 @@ Both parts work together to provide a complete fullstack solution with clear sep
 
 ## 📝 License
 
-**All Rights Reserved © 2025 Sebastián Rodríguez**
+**All Rights Reserved © 2026 Sebastián Rodríguez**
 
 This project is proprietary and confidential. Unauthorized copying, distribution, modification, or use of this software, via any medium, is strictly prohibited without explicit written permission from the author. This includes, but is not limited to, cloning, forking, selling, or redistributing this code for commercial or non-commercial purposes.
 
