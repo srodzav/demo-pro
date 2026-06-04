@@ -7,10 +7,6 @@
       </h1>
       <p>Análisis completo del rendimiento de tu clínica</p>
     </div>
-    <button class="btn-export" (click)="exportReport()">
-      <span class="material-symbols-outlined">download</span>
-      Exportar Reporte
-    </button>
   </div>
 
   <!-- Filters -->
@@ -49,6 +45,58 @@
       <p>Cargando estadísticas...</p>
     </div>
   } @else {
+    <!-- Period Summary -->
+    <div class="stats-section">
+      <div class="section-header">
+        <h2>
+          <span class="material-symbols-outlined">monitoring</span>
+          Resumen del período
+        </h2>
+      </div>
+
+      <div class="appointment-stats-grid">
+        <div class="stat-card total">
+          <div class="stat-icon">
+            <span class="material-symbols-outlined">payments</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatCurrency(financialSummary.income) }}</div>
+            <div class="stat-label">Ingresos</div>
+          </div>
+        </div>
+
+        <div class="stat-card completed">
+          <div class="stat-icon">
+            <span class="material-symbols-outlined">receipt_long</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatCurrency(financialSummary.average_ticket) }}</div>
+            <div class="stat-label">Ticket promedio</div>
+          </div>
+        </div>
+
+        <div class="stat-card confirmed">
+          <div class="stat-icon">
+            <span class="material-symbols-outlined">person_add</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ financialSummary.new_patients }}</div>
+            <div class="stat-label">Pacientes nuevos</div>
+          </div>
+        </div>
+
+        <div class="stat-card pending">
+          <div class="stat-icon">
+            <span class="material-symbols-outlined">account_balance_wallet</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatCurrency(financialSummary.accounts_receivable) }}</div>
+            <div class="stat-label">Por cobrar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Appointment Statistics -->
     <div class="stats-section">
       <div class="section-header">
@@ -145,20 +193,19 @@
       </div>
     </div>
 
-    <!-- Content Grid -->
-    <div class="content-grid">
-      <!-- Treatment Statistics -->
-      <div class="card">
-        <div class="card-header">
-          <h2>
-            <span class="material-symbols-outlined">medical_services</span>
-            Tratamientos Más Populares
-          </h2>
-        </div>
-        <div class="card-body">
-          @if (treatmentStats.length > 0) {
-            <div class="treatments-list">
-              @for (treatment of treatmentStats; track treatment.treatment) {
+    <!-- Treatment Statistics -->
+    <div class="card treatments-card">
+      <div class="card-header">
+        <h2>
+          <span class="material-symbols-outlined">medical_services</span>
+          Tratamientos más solicitados
+        </h2>
+      </div>
+      <div class="card-body">
+        @if (treatmentStats.length > 0) {
+          <div class="treatments-list">
+            @for (treatment of treatmentStats; track treatment.treatment) {
+              <div class="treatment-row">
                 <div class="treatment-item">
                   <div class="treatment-info">
                     <div class="treatment-name">{{ treatment.treatment }}</div>
@@ -178,18 +225,52 @@
                     [style.width.%]="treatment.percentage">
                   </div>
                 </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <span class="material-symbols-outlined">medical_services</span>
+            <p>No hay datos de tratamientos</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Peak Grid -->
+    <div class="peak-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2>
+            <span class="material-symbols-outlined">calendar_month</span>
+            Días de la semana
+          </h2>
+        </div>
+        <div class="card-body">
+          @if (peakDays.length > 0) {
+            <div class="peak-days-list">
+              @for (day of peakDays; track day.day) {
+                <div class="peak-day-row">
+                  <div class="peak-day-label">{{ day.day_name }}</div>
+                  <div class="peak-day-track">
+                    <div 
+                      class="peak-day-fill" 
+                      [style.width.%]="getDayBarWidth(day.count)">
+                    </div>
+                  </div>
+                  <div class="peak-day-count">{{ day.count }}</div>
+                </div>
               }
             </div>
           } @else {
             <div class="empty-state">
-              <span class="material-symbols-outlined">medical_services</span>
-              <p>No hay datos de tratamientos</p>
+              <span class="material-symbols-outlined">calendar_month</span>
+              <p>No hay datos por día</p>
             </div>
           }
         </div>
       </div>
 
-      <!-- Peak Hours -->
       <div class="card">
         <div class="card-header">
           <h2>
@@ -220,13 +301,16 @@
           }
         </div>
       </div>
+    </div>
 
+    <!-- Content Grid -->
+    <div class="content-grid">
       <!-- Top Patients -->
       <div class="card top-patients-card">
         <div class="card-header">
           <h2>
             <span class="material-symbols-outlined">star</span>
-            Top Pacientes
+            Pacientes con mayor facturación
           </h2>
         </div>
         <div class="card-body">
@@ -257,7 +341,7 @@
                     {{ formatCurrency(patient.total_spent) }}
                   </div>
                   <a 
-                    [routerLink]="['/dashboard/patients', patient.patient_id]"
+                    [routerLink]="['/dashboard/pacientes', patient.patient_id]"
                     class="btn-view-small">
                     <span class="material-symbols-outlined">visibility</span>
                   </a>

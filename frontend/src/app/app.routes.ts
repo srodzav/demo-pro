@@ -13,6 +13,7 @@ import { DetailComponent as PatientDetailComponent } from './dashboard/patients/
 import { WeeklyCalendarComponent } from './dashboard/weekly-calendar/weekly-calendar.component';
 import { FinanceComponent } from './dashboard/finance/finance.component';
 import { StatisticsComponent } from './dashboard/statistics/statistics.component';
+import { SettingsComponent } from './dashboard/settings/settings.component';
 
 export const routes: Routes = [
   // Public routes
@@ -37,6 +38,7 @@ export const routes: Routes = [
       { path: 'pacientes/:id', component: PatientDetailComponent },
       { path: 'finanzas', component: FinanceComponent },
       { path: 'estadisticas', component: StatisticsComponent },
+      { path: 'configuracion', component: SettingsComponent },
     ],
   },
 

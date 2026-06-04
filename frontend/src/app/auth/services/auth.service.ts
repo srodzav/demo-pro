@@ -9,6 +9,13 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  is_active?: boolean;
+  role?: {
+    id: number;
+    name: string;
+    label: string;
+  } | null;
+  permissions?: string[];
   created_at?: string;
 }
 
@@ -75,7 +82,13 @@ export class AuthService {
    * Get authenticated user from API
    */
   getAuthenticatedUser(): Observable<{ user: User }> {
-    return this.http.get<{ user: User }>(`${this.apiUrl}/auth/user`);
+    return this.http.get<{ user: User }>(`${this.apiUrl}/auth/user`).pipe(
+      tap(({ user }) => {
+        if (!this.isBrowser) return;
+        localStorage.setItem('user', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+      })
+    );
   }
 
   /**
@@ -83,6 +96,11 @@ export class AuthService {
    */
   isAuthenticated(): boolean {
     return !!this.getToken();
+  }
+
+  hasPermission(permission: string): boolean {
+    const user = this.getCurrentUser();
+    return user?.role?.name === 'admin' || !!user?.permissions?.includes(permission);
   }
 
   /**

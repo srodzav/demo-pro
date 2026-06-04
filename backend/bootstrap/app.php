@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'permission' => \App\Http\Middleware\EnsureUserHasPermission::class,
         ]);
 
         // Ensure CORS middleware is applied

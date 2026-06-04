@@ -1,0 +1,365 @@
+<div class="settings-page">
+  <div class="page-header">
+    <h1>
+      <span class="material-symbols-outlined">settings</span>
+      Configuracion
+    </h1>
+    <p>Usuarios, roles, clinica y catalogos base de esta instalacion</p>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <span class="material-symbols-outlined spinning">progress_activity</span>
+      <p>Cargando configuracion...</p>
+    </div>
+  } @else {
+    <div class="settings-tabs">
+      <button type="button" [class.active]="activeTab === 'clinic'" (click)="setTab('clinic')">
+        <span class="material-symbols-outlined">domain</span>
+        Clinica
+      </button>
+      <button type="button" [class.active]="activeTab === 'users'" (click)="setTab('users')">
+        <span class="material-symbols-outlined">group</span>
+        Usuarios
+      </button>
+      <button type="button" [class.active]="activeTab === 'roles'" (click)="setTab('roles')">
+        <span class="material-symbols-outlined">admin_panel_settings</span>
+        Roles
+      </button>
+      <button type="button" [class.active]="activeTab === 'catalogs'" (click)="setTab('catalogs')">
+        <span class="material-symbols-outlined">category</span>
+        Catalogos
+      </button>
+      <button type="button" [class.active]="activeTab === 'access'" (click)="setTab('access')">
+        <span class="material-symbols-outlined">lock</span>
+        Acceso
+      </button>
+    </div>
+
+    @if (message) {
+      <div class="notice success">{{ message }}</div>
+    }
+    @if (errorMessage) {
+      <div class="notice error">{{ errorMessage }}</div>
+    }
+
+    @if (activeTab === 'clinic') {
+      <section class="settings-section">
+        <div class="section-header">
+          <div>
+            <h2>Datos de clinica</h2>
+            <p>Esta informacion se usa para personalizar la instalacion por cliente.</p>
+          </div>
+          <button type="button" class="primary-btn" (click)="saveClinic()" [disabled]="saving">
+            <span class="material-symbols-outlined">save</span>
+            Guardar
+          </button>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            Nombre comercial
+            <input type="text" [(ngModel)]="clinic.clinic_name" />
+          </label>
+          <label>
+            Razon social
+            <input type="text" [(ngModel)]="clinic.legal_name" />
+          </label>
+          <label>
+            Email
+            <input type="email" [(ngModel)]="clinic.email" />
+          </label>
+          <label>
+            Telefono
+            <input type="text" [(ngModel)]="clinic.phone" />
+          </label>
+          <label>
+            WhatsApp
+            <input type="text" [(ngModel)]="clinic.whatsapp" />
+          </label>
+          <div class="logo-upload">
+            <span>Logo</span>
+            <div class="logo-upload-row">
+              @if (clinic.logo_url) {
+                <img [src]="clinic.logo_url" alt="Logo de la clinica" />
+              } @else {
+                <div class="logo-placeholder">
+                  <span class="material-symbols-outlined">image</span>
+                </div>
+              }
+              <label class="file-btn">
+                <span class="material-symbols-outlined">upload</span>
+                Subir archivo
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" (change)="uploadLogo($event)" />
+              </label>
+            </div>
+          </div>
+          <label class="span-2">
+            Direccion
+            <input type="text" [(ngModel)]="clinic.address" />
+          </label>
+          <label>
+            Ciudad
+            <input type="text" [(ngModel)]="clinic.city" />
+          </label>
+          <label>
+            Estado
+            <input type="text" [(ngModel)]="clinic.state" />
+          </label>
+        </div>
+
+        <h3>Horarios</h3>
+        <div class="hours-grid">
+          @for (day of businessDays; track day.key) {
+            <label>
+              {{ day.label }}
+              <input type="text" [(ngModel)]="clinic.business_hours![day.key]" placeholder="09:00-18:00" />
+            </label>
+          }
+        </div>
+
+        <h3>Colores</h3>
+        <div class="colors-grid">
+          <label>
+            Principal
+            <input type="color" [(ngModel)]="clinic.primary_color" />
+          </label>
+          <label>
+            Secundario
+            <input type="color" [(ngModel)]="clinic.accent_color" />
+          </label>
+        </div>
+      </section>
+    }
+
+    @if (activeTab === 'access') {
+      <section class="settings-section compact">
+        <div class="section-header">
+          <div>
+            <h2>Registro publico</h2>
+            <p>Para entregas reales conviene mantenerlo apagado y crear usuarios desde este modulo.</p>
+          </div>
+          <button type="button" class="primary-btn" (click)="saveAccess()" [disabled]="saving">
+            <span class="material-symbols-outlined">save</span>
+            Guardar
+          </button>
+        </div>
+
+        <label class="toggle-row">
+          <input type="checkbox" [(ngModel)]="publicRegistrationEnabled" />
+          <span>Permitir que nuevos usuarios se registren desde /register</span>
+        </label>
+      </section>
+    }
+
+    @if (activeTab === 'users') {
+      <section class="settings-section">
+        <div class="section-header">
+          <div>
+            <h2>Usuarios</h2>
+            <p>Administra accesos internos para esta clinica.</p>
+          </div>
+        </div>
+
+        <div class="create-row users-create">
+          <input type="text" placeholder="Nombre" [(ngModel)]="newUser.name" />
+          <input type="email" placeholder="Email" [(ngModel)]="newUser.email" />
+          <input type="password" placeholder="Password temporal" [(ngModel)]="newUser.password" />
+          <select [(ngModel)]="newUser.role_id">
+            @for (role of roles; track role.id) {
+              <option [ngValue]="role.id">{{ role.label }}</option>
+            }
+          </select>
+          <button type="button" class="primary-btn" (click)="createUser()" [disabled]="saving">
+            <span class="material-symbols-outlined">person_add</span>
+            Crear
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Activo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of users; track user.id) {
+                <tr>
+                  <td><input type="text" [(ngModel)]="user.name" /></td>
+                  <td><input type="email" [(ngModel)]="user.email" /></td>
+                  <td>
+                    <select [(ngModel)]="user.role_id">
+                      @for (role of roles; track role.id) {
+                        <option [ngValue]="role.id">{{ role.label }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td>
+                    <input type="checkbox" [(ngModel)]="user.is_active" />
+                  </td>
+                  <td>
+                    <button type="button" class="icon-btn" title="Guardar usuario" (click)="updateUser(user)" [disabled]="saving">
+                      <span class="material-symbols-outlined">save</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    @if (activeTab === 'roles') {
+      <section class="settings-section">
+        <div class="section-header">
+          <div>
+            <h2>Roles y permisos</h2>
+            <p>Define que puede hacer cada tipo de usuario.</p>
+          </div>
+        </div>
+
+        <div class="role-create">
+          <div class="create-row">
+            <input type="text" placeholder="Nombre del rol" [(ngModel)]="newRole.label" />
+            <input type="text" placeholder="Descripcion" [(ngModel)]="newRole.description" />
+            <button type="button" class="primary-btn" (click)="createRole()" [disabled]="saving">
+              <span class="material-symbols-outlined">add</span>
+              Crear rol
+            </button>
+          </div>
+
+          <div class="permission-groups">
+            @for (group of groupedPermissions(); track group.group) {
+              <div class="permission-group">
+                <strong>{{ group.group }}</strong>
+                @for (permission of group.permissions; track permission.id) {
+                  <label>
+                    <input
+                      type="checkbox"
+                      [checked]="newRoleHasPermission(permission.id)"
+                      (change)="toggleNewRolePermission(permission.id, $any($event.target).checked)" />
+                    {{ permission.label }}
+                  </label>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="roles-table">
+          @for (role of roles; track role.id) {
+            <article class="role-row">
+              <div class="role-main">
+                <input type="text" [(ngModel)]="role.label" />
+                @if (role.is_system) {
+                  <small>Rol base del sistema</small>
+                }
+                <textarea [(ngModel)]="role.description" rows="2"></textarea>
+              </div>
+              <div class="role-permissions">
+                @for (group of groupedPermissions(); track group.group) {
+                  <div class="permission-group">
+                    <strong>{{ group.group }}</strong>
+                    @for (permission of group.permissions; track permission.id) {
+                      <label>
+                        <input
+                          type="checkbox"
+                          [checked]="roleHasPermission(role, permission.id)"
+                          (change)="toggleRolePermission(role, permission, $any($event.target).checked)" />
+                        {{ permission.label }}
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+              <button type="button" class="icon-btn" title="Guardar rol" (click)="updateRole(role)" [disabled]="saving">
+                <span class="material-symbols-outlined">save</span>
+              </button>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (activeTab === 'catalogs') {
+      <section class="settings-section">
+        <div class="section-header">
+          <div>
+            <h2>Catalogos</h2>
+            <p>Configura tratamientos, metodos de pago, estados y tipos de expediente.</p>
+          </div>
+        </div>
+
+        <div class="create-row catalog-create">
+          <select [(ngModel)]="newCatalog.type">
+            @for (type of catalogTypes; track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select>
+          <input type="text" placeholder="Nombre" [(ngModel)]="newCatalog.label" />
+          @if (showCatalogPrice(newCatalog.type)) {
+            <input type="number" placeholder="Precio base" [(ngModel)]="newCatalog.price" />
+          }
+          <button type="button" class="primary-btn" (click)="createCatalog()" [disabled]="saving">
+            <span class="material-symbols-outlined">add</span>
+            Agregar
+          </button>
+        </div>
+
+        @for (type of catalogTypes; track type.value) {
+          <div class="catalog-group">
+            <h3>{{ type.label }}</h3>
+            <p class="catalog-help">{{ catalogTypeDescription(type.value) }}</p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Descripcion</th>
+                    @if (showCatalogPrice(type.value)) {
+                      <th>Precio base</th>
+                    }
+                    @if (showCatalogColor(type.value)) {
+                      <th>Color</th>
+                    }
+                    <th>Activo</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (catalog of catalogsByType(type.value); track catalog.id) {
+                    <tr>
+                      <td><input type="text" [(ngModel)]="catalog.label" /></td>
+                      <td><input type="text" [(ngModel)]="catalog.description" /></td>
+                      @if (showCatalogPrice(type.value)) {
+                        <td><input type="number" [(ngModel)]="catalog.price" /></td>
+                      }
+                      @if (showCatalogColor(type.value)) {
+                        <td><input type="color" [(ngModel)]="catalog.color" /></td>
+                      }
+                      <td><input type="checkbox" [(ngModel)]="catalog.is_active" /></td>
+                      <td class="table-actions">
+                        <button type="button" class="icon-btn" title="Guardar catalogo" (click)="updateCatalog(catalog)" [disabled]="saving">
+                          <span class="material-symbols-outlined">save</span>
+                        </button>
+                        <button type="button" class="icon-btn danger" title="Eliminar catalogo" (click)="deleteCatalog(catalog)" [disabled]="saving">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </section>
+    }
+  }
+</div>

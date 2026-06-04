@@ -75,7 +75,7 @@ export class ContactComponent {
       patient_phone: this.formData.phone,
       treatment_type: this.formData.treatment,
       notes: this.formData.message,
-      appointment_date: this.formData.appointment_date,
+      // appointment_date: this.formData.appointment_date, // Ignore 
     };
 
     this.appointmentService.createPublic(appointmentData).subscribe({

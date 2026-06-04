@@ -48,7 +48,7 @@ class AppointmentController extends Controller
             'patient_phone' => 'required|string|max:20',
             'treatment_type' => 'required|string',
             // appointment_date is optional for public requests (user may only request info)
-            'appointment_date' => 'nullable|date|after:now',
+            'appointment_date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\CatalogItem;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\PaymentPlan;
@@ -134,19 +135,34 @@ class StatisticsController extends Controller
      */
     public function treatmentStats(Request $request)
     {
-        $fromDate = $request->get('from_date', Carbon::now()->subYear());
-        $toDate = $request->get('to_date', Carbon::now());
+        [$fromDate, $toDate] = $this->dateRange($request, Carbon::now()->subYear());
 
-        $treatmentStats = Appointment::select(
-            'treatment_type',
-            DB::raw('COUNT(*) as count')
-        )
+        $treatmentStats = Appointment::query()
+            ->leftJoin('payments', function ($join) {
+                $join->on('appointments.id', '=', 'payments.appointment_id')
+                    ->where('payments.status', '=', 'completed');
+            })
+            ->select(
+                'appointments.treatment_type',
+                DB::raw('COUNT(DISTINCT appointments.id) as count'),
+                DB::raw('COALESCE(SUM(payments.amount), 0) as total_revenue')
+            )
             ->whereBetween('appointment_date', [$fromDate, $toDate])
-            ->groupBy('treatment_type')
+            ->groupBy('appointments.treatment_type')
             ->orderBy('count', 'desc')
             ->get();
 
-        return response()->json($treatmentStats);
+        $totalAppointments = $treatmentStats->sum('count');
+        $treatmentLabels = CatalogItem::where('type', 'treatment')->pluck('label', 'name');
+
+        return response()->json($treatmentStats->map(function ($item) use ($totalAppointments, $treatmentLabels) {
+            return [
+                'treatment' => $treatmentLabels[$item->treatment_type] ?? ucwords(str_replace('_', ' ', $item->treatment_type)),
+                'count' => (int) $item->count,
+                'total_revenue' => round((float) $item->total_revenue, 2),
+                'percentage' => $totalAppointments > 0 ? round(($item->count / $totalAppointments) * 100, 2) : 0,
+            ];
+        }));
     }
 
     /**
@@ -154,27 +170,30 @@ class StatisticsController extends Controller
      */
     public function appointmentStats(Request $request)
     {
-        $fromDate = $request->get('from_date', Carbon::now()->startOfMonth());
-        $toDate = $request->get('to_date', Carbon::now());
+        [$fromDate, $toDate] = $this->dateRange($request, Carbon::now()->startOfMonth());
 
         $statusStats = Appointment::select(
             'status',
             DB::raw('COUNT(*) as count')
         )
-            ->whereBetween('created_at', [$fromDate, $toDate])
+            ->whereBetween('appointment_date', [$fromDate, $toDate])
             ->groupBy('status')
             ->get();
 
-        // Cancellation rate
         $totalAppointments = $statusStats->sum('count');
-        $cancelledAppointments = $statusStats->firstWhere('status', 'cancelled');
-        $cancellationRate = $totalAppointments > 0 ? 
-            ($cancelledAppointments ? ($cancelledAppointments->count / $totalAppointments) * 100 : 0) : 0;
+        $confirmed = (int) ($statusStats->firstWhere('status', 'confirmed')->count ?? 0);
+        $pending = (int) ($statusStats->firstWhere('status', 'pending')->count ?? 0);
+        $cancelled = (int) ($statusStats->firstWhere('status', 'cancelled')->count ?? 0);
+        $completed = (int) ($statusStats->firstWhere('status', 'completed')->count ?? 0);
+        $cancellationRate = $totalAppointments > 0 ? ($cancelled / $totalAppointments) * 100 : 0;
 
         return response()->json([
-            'by_status' => $statusStats,
+            'total' => (int) $totalAppointments,
+            'confirmed' => $confirmed,
+            'pending' => $pending,
+            'cancelled' => $cancelled,
+            'completed' => $completed,
             'cancellation_rate' => round($cancellationRate, 2),
-            'total_appointments' => $totalAppointments,
         ]);
     }
 
@@ -183,8 +202,7 @@ class StatisticsController extends Controller
      */
     public function paymentMethodStats(Request $request)
     {
-        $fromDate = $request->get('from_date', Carbon::now()->startOfMonth());
-        $toDate = $request->get('to_date', Carbon::now());
+        [$fromDate, $toDate] = $this->dateRange($request, Carbon::now()->startOfMonth());
 
         $paymentMethodStats = Payment::select(
             'payment_method',
@@ -226,19 +244,25 @@ class StatisticsController extends Controller
     {
         $limit = $request->get('limit', 10);
 
-        $topPatients = Payment::select(
-            'patient_id',
-            DB::raw('SUM(amount) as total_spent'),
-            DB::raw('COUNT(*) as payment_count')
-        )
-            ->where('status', 'completed')
-            ->groupBy('patient_id')
-            ->orderBy('total_spent', 'desc')
+        $topPatients = Patient::query()
+            ->withCount('appointments')
+            ->withSum(['payments as total_spent' => function ($query) {
+                $query->where('status', 'completed');
+            }], 'amount')
+            ->with(['latestAppointment:id,patient_id,appointment_date'])
+            ->orderByDesc('total_spent')
             ->limit($limit)
-            ->with('patient')
             ->get();
 
-        return response()->json($topPatients);
+        return response()->json($topPatients->map(function ($patient) {
+            return [
+                'patient_id' => (int) $patient->id,
+                'patient_name' => $patient->name,
+                'total_appointments' => (int) $patient->appointments_count,
+                'total_spent' => round((float) $patient->total_spent, 2),
+                'last_appointment' => $patient->latestAppointment?->appointment_date,
+            ];
+        }));
     }
 
     /**
@@ -246,20 +270,67 @@ class StatisticsController extends Controller
      */
     public function peakHours(Request $request)
     {
-        $fromDate = $request->get('from_date', Carbon::now()->subMonth());
-        $toDate = $request->get('to_date', Carbon::now());
+        [$fromDate, $toDate] = $this->dateRange($request, Carbon::now()->subMonth());
 
         $peakHours = Appointment::select(
             DB::raw('HOUR(appointment_date) as hour'),
             DB::raw('COUNT(*) as count')
         )
             ->whereNotNull('appointment_date')
+            ->where('status', '!=', 'cancelled')
             ->whereBetween('appointment_date', [$fromDate, $toDate])
             ->groupBy('hour')
-            ->orderBy('count', 'desc')
+            ->orderBy('hour')
             ->get();
 
-        return response()->json($peakHours);
+        $totalAppointments = $peakHours->sum('count');
+
+        return response()->json($peakHours->map(function ($hour) use ($totalAppointments) {
+            return [
+                'hour' => (int) $hour->hour,
+                'count' => (int) $hour->count,
+                'percentage' => $totalAppointments > 0 ? round(($hour->count / $totalAppointments) * 100, 2) : 0,
+            ];
+        }));
+    }
+
+    /**
+     * Get busiest weekdays for appointments
+     */
+    public function peakDays(Request $request)
+    {
+        [$fromDate, $toDate] = $this->dateRange($request, Carbon::now()->subMonth());
+
+        $peakDays = Appointment::select(
+            DB::raw('DAYOFWEEK(appointment_date) as day_number'),
+            DB::raw('COUNT(*) as count')
+        )
+            ->whereNotNull('appointment_date')
+            ->where('status', '!=', 'cancelled')
+            ->whereBetween('appointment_date', [$fromDate, $toDate])
+            ->groupBy('day_number')
+            ->orderBy('day_number')
+            ->get();
+
+        $totalAppointments = $peakDays->sum('count');
+        $dayNames = [
+            1 => 'Domingo',
+            2 => 'Lunes',
+            3 => 'Martes',
+            4 => 'Miercoles',
+            5 => 'Jueves',
+            6 => 'Viernes',
+            7 => 'Sabado',
+        ];
+
+        return response()->json($peakDays->map(function ($day) use ($totalAppointments, $dayNames) {
+            return [
+                'day' => (int) $day->day_number,
+                'day_name' => $dayNames[(int) $day->day_number] ?? 'Sin dia',
+                'count' => (int) $day->count,
+                'percentage' => $totalAppointments > 0 ? round(($day->count / $totalAppointments) * 100, 2) : 0,
+            ];
+        }));
     }
 
     /**
@@ -267,13 +338,16 @@ class StatisticsController extends Controller
      */
     public function financialReport(Request $request)
     {
-        $fromDate = $request->get('from_date', Carbon::now()->startOfMonth());
-        $toDate = $request->get('to_date', Carbon::now());
+        [$fromDate, $toDate] = $this->dateRange($request, Carbon::now()->startOfMonth());
 
         // Total income
         $totalIncome = Payment::where('status', 'completed')
             ->whereBetween('payment_date', [$fromDate, $toDate])
             ->sum('amount');
+        $completedPayments = Payment::where('status', 'completed')
+            ->whereBetween('payment_date', [$fromDate, $toDate])
+            ->count();
+        $newPatients = Patient::whereBetween('created_at', [$fromDate, $toDate])->count();
 
         // Payments by type
         $paymentsByType = Payment::select(
@@ -313,8 +387,13 @@ class StatisticsController extends Controller
             ],
             'income' => [
                 'total' => round($totalIncome, 2),
+                'payment_count' => $completedPayments,
+                'average_ticket' => $completedPayments > 0 ? round($totalIncome / $completedPayments, 2) : 0,
                 'by_type' => $paymentsByType,
                 'by_method' => $paymentsByMethod,
+            ],
+            'patients' => [
+                'new' => $newPatients,
             ],
             'payment_plans' => [
                 'active' => $activePaymentPlans,
@@ -322,5 +401,17 @@ class StatisticsController extends Controller
             ],
             'accounts_receivable' => round($accountsReceivable, 2),
         ]);
+    }
+
+    private function dateRange(Request $request, Carbon $defaultFrom): array
+    {
+        $fromDate = $request->filled('from_date')
+            ? Carbon::parse($request->from_date)->startOfDay()
+            : $defaultFrom->copy()->startOfDay();
+        $toDate = $request->filled('to_date')
+            ? Carbon::parse($request->to_date)->endOfDay()
+            : Carbon::now()->endOfDay();
+
+        return [$fromDate, $toDate];
     }
 }

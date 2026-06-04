@@ -47,6 +47,13 @@
         <span class="nav-text">Estadísticas</span>
       </a>
 
+      @if (hasPermission('settings.manage')) {
+      <a routerLink="/dashboard/configuracion" routerLinkActive="active" class="nav-item">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="nav-text">Configuración</span>
+      </a>
+      }
+
       <div class="nav-divider"></div>
 
       <a routerLink="/" class="nav-item">

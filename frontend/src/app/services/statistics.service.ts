@@ -36,8 +36,13 @@ export interface FinancialReport {
   };
   income: {
     total: number;
+    payment_count: number;
+    average_ticket: number;
     by_type: any[];
     by_method: any[];
+  };
+  patients: {
+    new: number;
   };
   payment_plans: {
     active: number;
@@ -135,6 +140,16 @@ export class StatisticsService {
     if (fromDate) params = params.set('from_date', fromDate);
     if (toDate) params = params.set('to_date', toDate);
     return this.http.get<any[]>(`${this.apiUrl}/peak-hours`, { params });
+  }
+
+  /**
+   * Get busiest weekdays for appointments
+   */
+  getPeakDays(fromDate?: string, toDate?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (fromDate) params = params.set('from_date', fromDate);
+    if (toDate) params = params.set('to_date', toDate);
+    return this.http.get<any[]>(`${this.apiUrl}/peak-days`, { params });
   }
 
   /**

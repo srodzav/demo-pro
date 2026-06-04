@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { StatisticsService } from '../../services/statistics.service';
 import { RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { NotificationService } from '../../services/notification.service';
 
 interface AppointmentStats {
   total: number;
@@ -36,6 +35,21 @@ interface PeakHour {
   percentage: number;
 }
 
+interface PeakDay {
+  day: number;
+  day_name: string;
+  count: number;
+  percentage: number;
+}
+
+interface FinancialSummary {
+  income: number;
+  average_ticket: number;
+  payment_count: number;
+  new_patients: number;
+  accounts_receivable: number;
+}
+
 @Component({
   selector: 'app-statistics',
   standalone: true,
@@ -64,6 +78,15 @@ export class StatisticsComponent implements OnInit {
   
   // Peak hours
   peakHours: PeakHour[] = [];
+  peakDays: PeakDay[] = [];
+
+  financialSummary: FinancialSummary = {
+    income: 0,
+    average_ticket: 0,
+    payment_count: 0,
+    new_patients: 0,
+    accounts_receivable: 0
+  };
   
   // Date filters
   startDate = '';
@@ -79,10 +102,7 @@ export class StatisticsComponent implements OnInit {
     { value: 'custom', label: 'Personalizado' }
   ];
 
-  constructor(
-    private statisticsService: StatisticsService,
-    private notification: NotificationService
-  ) {
+  constructor(private statisticsService: StatisticsService) {
     this.initializeDates();
   }
 
@@ -110,7 +130,9 @@ export class StatisticsComponent implements OnInit {
       this.loadAppointmentStats(),
       this.loadTreatmentStats(),
       this.loadTopPatients(),
-      this.loadPeakHours()
+      this.loadPeakHours(),
+      this.loadPeakDays(),
+      this.loadFinancialSummary()
     ]).finally(() => {
       this.loading = false;
     });
@@ -151,10 +173,43 @@ export class StatisticsComponent implements OnInit {
 
   async loadPeakHours(): Promise<void> {
     try {
-      const data = await firstValueFrom(this.statisticsService.getPeakHours());
+      const data = await firstValueFrom(this.statisticsService.getPeakHours(
+        this.startDate,
+        this.endDate
+      ));
       this.peakHours = data || [];
     } catch (error) {
       console.error('Error loading peak hours:', error);
+    }
+  }
+
+  async loadPeakDays(): Promise<void> {
+    try {
+      const data = await firstValueFrom(this.statisticsService.getPeakDays(
+        this.startDate,
+        this.endDate
+      ));
+      this.peakDays = data || [];
+    } catch (error) {
+      console.error('Error loading peak days:', error);
+    }
+  }
+
+  async loadFinancialSummary(): Promise<void> {
+    try {
+      const data = await firstValueFrom(this.statisticsService.getFinancialReport(
+        this.startDate,
+        this.endDate
+      ));
+      this.financialSummary = {
+        income: data.income?.total || 0,
+        average_ticket: data.income?.average_ticket || 0,
+        payment_count: data.income?.payment_count || 0,
+        new_patients: data.patients?.new || 0,
+        accounts_receivable: data.accounts_receivable || 0
+      };
+    } catch (error) {
+      console.error('Error loading financial summary:', error);
     }
   }
 
@@ -205,6 +260,10 @@ export class StatisticsComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
+    if (!dateString) {
+      return 'Sin visitas';
+    }
+
     const date = new Date(dateString);
     return date.toLocaleDateString('es-MX', {
       year: 'numeric',
@@ -229,13 +288,20 @@ export class StatisticsComponent implements OnInit {
     return Math.max(...this.peakHours.map(h => h.count));
   }
 
+  getMaxPeakDayCount(): number {
+    if (this.peakDays.length === 0) return 0;
+    return Math.max(...this.peakDays.map(day => day.count));
+  }
+
   getBarHeight(count: number): number {
     const max = this.getMaxPeakHourCount();
     if (max === 0) return 0;
-    return (count / max) * 100;
+    return 12 + ((count / max) * 76);
   }
 
-  exportReport(): void {
-    this.notification.warning('Funcionalidad de exportación en desarrollo');
+  getDayBarWidth(count: number): number {
+    const max = this.getMaxPeakDayCount();
+    if (max === 0) return 0;
+    return 8 + ((count / max) * 92);
   }
 }

@@ -8,6 +8,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const token = authService.getToken();
+  const isFormData = req.body instanceof FormData;
 
   // Clone request with credentials and headers
   let clonedReq = req.clone({
@@ -20,14 +21,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       setHeaders: {
         Authorization: `Bearer ${token}`,
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       },
     });
   } else {
     clonedReq = clonedReq.clone({
       setHeaders: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       },
     });
   }

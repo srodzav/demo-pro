@@ -17,10 +17,19 @@ export class LayoutComponent {
   constructor(private authService: AuthService) {
     const user = this.authService.getCurrentUser();
     this.userName = user?.name || 'Admin';
+    this.authService.getAuthenticatedUser().subscribe({
+      next: ({ user: refreshedUser }) => {
+        this.userName = refreshedUser.name;
+      },
+    });
   }
 
   toggleSidebar(): void {
     this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  hasPermission(permission: string): boolean {
+    return this.authService.hasPermission(permission);
   }
 
   logout(): void {
